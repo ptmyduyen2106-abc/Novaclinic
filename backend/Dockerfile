@@ -21,6 +21,9 @@ WORKDIR /app
 COPY CMakeLists.txt ./
 COPY httplib.h ./
 
+# Copy thư mục libs (chứa json.hpp) để tránh lỗi missing file
+COPY libs/ ./libs/
+
 # Copy toàn bộ mã nguồn
 COPY src/ ./src/
 
@@ -34,7 +37,7 @@ RUN mkdir build && cd build && \
 # ==========================================
 FROM ubuntu:22.04
 
-# Cài đặt các thư viện runtime cơ bản (như chứng chỉ bảo mật để gọi API HTTPS của Supabase)
+# Cài đặt các thư viện runtime cơ bản (như chứng chỉ bảo mật để gọi API HTTPS)
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
@@ -44,14 +47,14 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Khai báo file biến môi trường (nếu có dùng file .env)
-# Nếu bạn truyền biến môi trường trực tiếp trên server thì không cần dòng COPY .env này
+# Nếu bạn truyền biến môi trường trực tiếp trên Render thì không cần dòng COPY .env này
 COPY .env ./
 
 # Lấy file thực thi (.exe/binary) đã được build thành công từ Stage 1 sang
-# LƯU Ý: Thay 'clinic_backend' bằng đúng tên file thực thi được định nghĩa trong CMakeLists.txt (mục add_executable)
+# LƯU Ý: Đảm bảo chữ 'clinic_backend' trùng khớp với tên trong file CMakeLists.txt của bạn
 COPY --from=builder /app/build/clinic_backend ./clinic_backend
 
-# Mở port mà server C++ (httplib) của bạn đang lắng nghe (Ví dụ: 8080)
+# Mở port mà server C++ (httplib) của bạn đang lắng nghe
 EXPOSE 8080
 
 # Lệnh khởi chạy backend
