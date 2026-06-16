@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\clinic_backend.dir/objects.a
+C:\msys64\ucrt64\bin\ar.exe qc CMakeFiles\clinic_backend.dir/objects.a @CMakeFiles\clinic_backend.dir\objects1.rsp
+C:\msys64\ucrt64\bin\c++.exe -O2 -DNDEBUG -Wl,--whole-archive CMakeFiles\clinic_backend.dir/objects.a -Wl,--no-whole-archive -o bin\clinic_backend.exe -Wl,--out-implib,libclinic_backend.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\clinic_backend.dir\linkLibs.rsp
