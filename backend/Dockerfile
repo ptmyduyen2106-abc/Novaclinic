@@ -6,7 +6,7 @@ FROM ubuntu:22.04 AS builder
 # Tắt các prompt hỏi đáp trong quá trình cài đặt apt-get
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Cài đặt các công cụ build (C++, CMake, Make) và các thư viện cần thiết (SSL/Curl cho Supabase)
+# Cài đặt các công cụ build và các thư viện cần thiết
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -27,17 +27,18 @@ COPY libs/ ./libs/
 # Copy toàn bộ mã nguồn
 COPY src/ ./src/
 
-# Tạo thư mục build và tiến hành biên dịch
+# Tạo thư mục build, tiến hành biên dịch, sau đó tự động tìm và xuất file ra ngoài
 RUN mkdir build && cd build && \
     cmake .. && \
-    make
+    make && \
+    find /app/build -type f -name "clinic_backend" -exec cp {} /app/clinic_backend_ready \;
 
 # ==========================================
 # STAGE 2: RUN (Môi trường chạy ứng dụng nhẹ)
 # ==========================================
 FROM ubuntu:22.04
 
-# Cài đặt các thư viện runtime cơ bản (như chứng chỉ bảo mật để gọi API HTTPS)
+# Cài đặt các thư viện runtime cơ bản
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
@@ -46,13 +47,13 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Khai báo file biến môi trường (nếu có dùng file .env)
-# Nếu bạn truyền biến môi trường trực tiếp trên Render thì không cần dòng COPY .env này
 COPY .env ./
 
-# Lấy file thực thi (.exe/binary) đã được build thành công từ Stage 1 sang
-# LƯU Ý: Đảm bảo chữ 'clinic_backend' trùng khớp với tên trong file CMakeLists.txt của bạn
-COPY --from=builder /app/build/clinic_backend ./clinic_backend
+# Lấy file thực thi đã được tóm gọn từ Stage 1 sang
+COPY --from=builder /app/clinic_backend_ready ./clinic_backend
+
+# Cấp quyền thực thi để đảm bảo file chạy được trơn tru
+RUN chmod +x ./clinic_backend
 
 # Mở port mà server C++ (httplib) của bạn đang lắng nghe
 EXPOSE 8080
