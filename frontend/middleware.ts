@@ -9,7 +9,7 @@ const ROLE_ROUTES: Record<string, string[]> = {
   doctor:  ['/doctor'],
   pharma:  ['/pharmacy'],
   admin:   ['/doctor', '/pharmacy', '/finance'],
-  patient: ['/dashboard', '/booking', '/queue', '/records', '/prescriptions', '/profile'],
+  patient: ['/patient'],
 }
 
 export async function middleware(req: NextRequest) {
@@ -57,7 +57,7 @@ export async function middleware(req: NextRequest) {
     const home = user.role === 'doctor'  ? '/doctor'
                : user.role === 'pharma'  ? '/pharmacy'
                : user.role === 'admin'   ? '/finance'
-               : '/dashboard'
+               : '/patient'
     return NextResponse.redirect(new URL(home, req.url))
   }
 
@@ -66,6 +66,5 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: ['/doctor/:path*', '/pharmacy/:path*', '/finance/:path*',
-            '/dashboard/:path*', '/booking/:path*', '/records/:path*',
-            '/profile/:path*', '/queue/:path*'],
+            '/patient/:path*'],
 }
