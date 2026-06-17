@@ -26,7 +26,7 @@ function LoginForm() {
         ? redirect
         : userData?.role === 'pharma'   ? '/pharmacy'
         : userData?.role === 'admin'    ? '/finance'
-        : userData?.role === 'patient'  ? '/dashboard'
+        : userData?.role === 'patient'  ? '/patient'
         : '/doctor'
       window.location.href = dest
     } catch {
