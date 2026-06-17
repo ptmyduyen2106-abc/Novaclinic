@@ -1,10 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable server components (default in App Router)
-  experimental: {
-    serverActions: true,
-  },
-
   // Allow images from Supabase storage
   images: {
     remotePatterns: [
