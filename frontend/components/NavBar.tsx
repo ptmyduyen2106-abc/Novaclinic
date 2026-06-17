@@ -9,7 +9,7 @@ const NAV_LINKS = [
   { href: '/doctor',    label: 'Bác sĩ',   roles: ['doctor', 'admin'],          icon: '🩺' },
   { href: '/pharmacy',  label: 'Nhà thuốc', roles: ['pharma', 'admin'],          icon: '💊' },
   { href: '/finance',   label: 'Tài chính', roles: ['admin'],                    icon: '📊' },
-  { href: '/dashboard', label: 'Trang chủ', roles: ['patient'],                  icon: '🏠' },
+  { href: '/patient',   label: 'Trang chủ', roles: ['patient'],                  icon: '🏠' },
   { href: '/booking',   label: 'Đặt lịch',  roles: ['patient'],                  icon: '📅' },
   { href: '/queue',     label: 'Hàng chờ',  roles: ['patient'],                  icon: '🔢' },
   { href: '/records',   label: 'Hồ sơ',     roles: ['patient'],                  icon: '📋' },

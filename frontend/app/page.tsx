@@ -30,7 +30,7 @@ const supabase = createServerClient(
   if (user.role === 'doctor')  redirect('/doctor')
   if (user.role === 'pharma')  redirect('/pharmacy')
   if (user.role === 'admin')   redirect('/finance')
-  if (user.role === 'patient') redirect('/dashboard')
+  if (user.role === 'patient') redirect('/patient')
 
   redirect('/login')
 }
