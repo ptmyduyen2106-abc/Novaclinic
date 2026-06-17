@@ -67,26 +67,6 @@ function LoginForm() {
         </a>
       </div>
 
-      <div className="mt-6 pt-5 border-t border-slate-100">
-        <p className="text-xs text-slate-400 font-medium mb-2">💡 Tài khoản demo (click để điền):</p>
-        <div className="space-y-1 text-xs text-slate-500">
-          {[
-            { role: 'Bác sĩ',  email: 'doctor@demo.vn' },
-            { role: 'Dược sĩ', email: 'pharma@demo.vn' },
-            { role: 'Quản lý', email: 'admin@demo.vn'  },
-          ].map((u) => (
-            <div key={u.email} className="flex items-center gap-2">
-              <span className="w-20 text-slate-400">{u.role}</span>
-              <code
-                className="bg-slate-50 px-2 py-0.5 rounded cursor-pointer hover:bg-blue-50 transition"
-                onClick={() => { setEmail(u.email); setPassword('123456') }}
-              >
-                {u.email} / 123456
-              </code>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }
