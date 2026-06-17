@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface FormData {
-  // Thông tin cá nhân
   fullName: string;
   dateOfBirth: string;
   gender: string;
@@ -11,7 +11,6 @@ interface FormData {
   phone: string;
   email: string;
   address: string;
-  // Thông tin tài khoản
   username: string;
   password: string;
   confirmPassword: string;
@@ -102,9 +101,41 @@ export default function RegisterPage() {
     e.preventDefault();
     if (!validate()) return;
     setIsSubmitting(true);
-    await new Promise(r => setTimeout(r, 1500));
-    setIsSubmitting(false);
-    setSubmitSuccess(true);
+
+    try {
+      // 1. Tạo user trong Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            phone:     formData.phone,
+          }
+        }
+      })
+
+      if (error) throw error
+      if (!data.user) throw new Error('Không tạo được tài khoản')
+
+      // 2. Insert vào bảng public.users với role = 'patient'
+      const { error: dbError } = await supabase
+        .from('users')
+        .insert([{
+          id:   data.user.id,
+          name: formData.fullName,
+          role: 'patient',
+        }])
+
+      if (dbError) throw dbError
+
+      setSubmitSuccess(true)
+
+    } catch (err) {
+      setErrors({ submit: err instanceof Error ? err.message : 'Đăng ký thất bại' })
+    } finally {
+      setIsSubmitting(false)
+    }
   };
 
   const passwordStrength = (pwd: string): { level: number; label: string; color: string } => {
@@ -135,7 +166,7 @@ export default function RegisterPage() {
           <p className="text-gray-500 mb-8">
             Tài khoản của bạn đã được tạo. Vui lòng kiểm tra email để xác thực tài khoản trước khi đăng nhập.
           </p>
-          <a
+          
             href="/login"
             className="inline-block w-full py-3 rounded-xl font-semibold text-white text-center transition-opacity hover:opacity-90"
             style={{ backgroundColor: '#1B6CA8' }}
@@ -154,12 +185,10 @@ export default function RegisterPage() {
         className="hidden lg:flex lg:w-2/5 flex-col justify-between p-12 relative overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #1B6CA8 0%, #0D4A7A 100%)' }}
       >
-        {/* Decorative circles */}
         <div className="absolute -top-20 -left-20 w-64 h-64 rounded-full opacity-10" style={{ backgroundColor: '#fff' }} />
         <div className="absolute -bottom-16 -right-16 w-80 h-80 rounded-full opacity-10" style={{ backgroundColor: '#fff' }} />
         <div className="absolute top-1/2 -right-8 w-40 h-40 rounded-full opacity-5" style={{ backgroundColor: '#fff' }} />
 
-        {/* Logo & brand */}
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
@@ -178,7 +207,6 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        {/* Feature list */}
         <div className="relative z-10 space-y-5">
           {[
             { icon: '🗓️', text: 'Đặt lịch khám trực tuyến nhanh chóng' },
@@ -201,7 +229,6 @@ export default function RegisterPage() {
       {/* Right panel — form */}
       <div className="flex-1 flex flex-col justify-center px-6 py-10 lg:px-16 xl:px-24 overflow-y-auto">
         <div className="max-w-2xl w-full mx-auto">
-          {/* Mobile header */}
           <div className="flex items-center gap-3 mb-8 lg:hidden">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#1B6CA8' }}>
               <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="white">
@@ -230,59 +257,42 @@ export default function RegisterPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Họ và tên */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Họ và tên <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="text"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleChange}
+                    type="text" name="fullName" value={formData.fullName} onChange={handleChange}
                     placeholder="Nguyễn Văn A"
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-2 ${
-                      errors.fullName
-                        ? 'border-red-400 focus:ring-red-100'
-                        : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
+                      errors.fullName ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
                     }`}
                   />
                   {errors.fullName && <p className="mt-1 text-xs text-red-500">{errors.fullName}</p>}
                 </div>
 
-                {/* Ngày sinh */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Ngày sinh <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="date"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleChange}
+                    type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange}
                     max={new Date().toISOString().split('T')[0]}
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-2 ${
-                      errors.dateOfBirth
-                        ? 'border-red-400 focus:ring-red-100'
-                        : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
+                      errors.dateOfBirth ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
                     }`}
                   />
                   {errors.dateOfBirth && <p className="mt-1 text-xs text-red-500">{errors.dateOfBirth}</p>}
                 </div>
 
-                {/* Giới tính */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Giới tính <span className="text-red-500">*</span>
                   </label>
                   <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
+                    name="gender" value={formData.gender} onChange={handleChange}
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-2 bg-white ${
-                      errors.gender
-                        ? 'border-red-400 focus:ring-red-100'
-                        : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
+                      errors.gender ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
                     }`}
                   >
                     <option value="">-- Chọn giới tính --</option>
@@ -293,82 +303,57 @@ export default function RegisterPage() {
                   {errors.gender && <p className="mt-1 text-xs text-red-500">{errors.gender}</p>}
                 </div>
 
-                {/* Số CCCD */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Số CCCD / CMND <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="text"
-                    name="idNumber"
-                    value={formData.idNumber}
-                    onChange={handleChange}
-                    placeholder="001234567890"
-                    maxLength={12}
+                    type="text" name="idNumber" value={formData.idNumber} onChange={handleChange}
+                    placeholder="001234567890" maxLength={12}
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-2 ${
-                      errors.idNumber
-                        ? 'border-red-400 focus:ring-red-100'
-                        : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
+                      errors.idNumber ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
                     }`}
                   />
                   {errors.idNumber && <p className="mt-1 text-xs text-red-500">{errors.idNumber}</p>}
                 </div>
 
-                {/* Số điện thoại */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Số điện thoại <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
+                    type="tel" name="phone" value={formData.phone} onChange={handleChange}
                     placeholder="0901234567"
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-2 ${
-                      errors.phone
-                        ? 'border-red-400 focus:ring-red-100'
-                        : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
+                      errors.phone ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
                     }`}
                   />
                   {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
                 </div>
 
-                {/* Email */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
+                    type="email" name="email" value={formData.email} onChange={handleChange}
                     placeholder="example@email.com"
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-2 ${
-                      errors.email
-                        ? 'border-red-400 focus:ring-red-100'
-                        : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
+                      errors.email ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
                     }`}
                   />
                   {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
                 </div>
 
-                {/* Địa chỉ */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Địa chỉ <span className="text-red-500">*</span>
                   </label>
                   <textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                    rows={2}
+                    name="address" value={formData.address} onChange={handleChange}
+                    placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" rows={2}
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-2 resize-none ${
-                      errors.address
-                        ? 'border-red-400 focus:ring-red-100'
-                        : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
+                      errors.address ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
                     }`}
                   />
                   {errors.address && <p className="mt-1 text-xs text-red-500">{errors.address}</p>}
@@ -384,27 +369,20 @@ export default function RegisterPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-                {/* Tên đăng nhập */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Tên đăng nhập <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
+                    type="text" name="username" value={formData.username} onChange={handleChange}
                     placeholder="Tối thiểu 4 ký tự, không dấu"
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-2 ${
-                      errors.username
-                        ? 'border-red-400 focus:ring-red-100'
-                        : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
+                      errors.username ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
                     }`}
                   />
                   {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username}</p>}
                 </div>
 
-                {/* Mật khẩu */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Mật khẩu <span className="text-red-500">*</span>
@@ -412,22 +390,14 @@ export default function RegisterPage() {
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
+                      name="password" value={formData.password} onChange={handleChange}
                       placeholder="Tối thiểu 8 ký tự"
                       className={`w-full px-4 py-2.5 pr-11 rounded-xl border text-sm transition-all outline-none focus:ring-2 ${
-                        errors.password
-                          ? 'border-red-400 focus:ring-red-100'
-                          : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
+                        errors.password ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
                       }`}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      tabIndex={-1}
-                    >
+                    <button type="button" onClick={() => setShowPassword(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" tabIndex={-1}>
                       {showPassword ? (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
@@ -440,29 +410,20 @@ export default function RegisterPage() {
                       )}
                     </button>
                   </div>
-                  {/* Password strength bar */}
                   {formData.password && (
                     <div className="mt-2">
                       <div className="flex gap-1 mb-1">
                         {[1, 2, 3, 4].map(i => (
-                          <div
-                            key={i}
-                            className="h-1 flex-1 rounded-full transition-all duration-300"
-                            style={{
-                              backgroundColor: i <= strength.level ? strength.color : '#e5e7eb',
-                            }}
-                          />
+                          <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300"
+                            style={{ backgroundColor: i <= strength.level ? strength.color : '#e5e7eb' }} />
                         ))}
                       </div>
-                      <p className="text-xs" style={{ color: strength.color }}>
-                        Độ mạnh: {strength.label}
-                      </p>
+                      <p className="text-xs" style={{ color: strength.color }}>Độ mạnh: {strength.label}</p>
                     </div>
                   )}
                   {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
                 </div>
 
-                {/* Xác nhận mật khẩu */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Xác nhận mật khẩu <span className="text-red-500">*</span>
@@ -470,9 +431,7 @@ export default function RegisterPage() {
                   <div className="relative">
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
+                      name="confirmPassword" value={formData.confirmPassword} onChange={handleChange}
                       placeholder="Nhập lại mật khẩu"
                       className={`w-full px-4 py-2.5 pr-11 rounded-xl border text-sm transition-all outline-none focus:ring-2 ${
                         errors.confirmPassword
@@ -482,12 +441,8 @@ export default function RegisterPage() {
                           : 'border-gray-200 focus:border-blue-400 focus:ring-blue-50'
                       }`}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      tabIndex={-1}
-                    >
+                    <button type="button" onClick={() => setShowConfirmPassword(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" tabIndex={-1}>
                       {showConfirmPassword ? (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
@@ -512,20 +467,13 @@ export default function RegisterPage() {
             <div className="mb-6">
               <label className="flex items-start gap-3 cursor-pointer group">
                 <div className="relative mt-0.5 shrink-0">
-                  <input
-                    type="checkbox"
-                    name="agreeTerms"
-                    checked={formData.agreeTerms}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <div
-                    className="w-5 h-5 rounded border-2 flex items-center justify-center transition-all"
+                  <input type="checkbox" name="agreeTerms" checked={formData.agreeTerms}
+                    onChange={handleChange} className="sr-only" />
+                  <div className="w-5 h-5 rounded border-2 flex items-center justify-center transition-all"
                     style={{
                       borderColor: formData.agreeTerms ? '#1B6CA8' : errors.agreeTerms ? '#ef4444' : '#d1d5db',
                       backgroundColor: formData.agreeTerms ? '#1B6CA8' : 'white',
-                    }}
-                  >
+                    }}>
                     {formData.agreeTerms && (
                       <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -535,23 +483,25 @@ export default function RegisterPage() {
                 </div>
                 <span className="text-sm text-gray-600 leading-relaxed">
                   Tôi đã đọc và đồng ý với{' '}
-                  <a href="#" style={{ color: '#1B6CA8' }} className="font-medium hover:underline">
-                    Điều khoản sử dụng
-                  </a>{' '}
+                  <a href="#" style={{ color: '#1B6CA8' }} className="font-medium hover:underline">Điều khoản sử dụng</a>{' '}
                   và{' '}
-                  <a href="#" style={{ color: '#1B6CA8' }} className="font-medium hover:underline">
-                    Chính sách bảo mật
-                  </a>{' '}
+                  <a href="#" style={{ color: '#1B6CA8' }} className="font-medium hover:underline">Chính sách bảo mật</a>{' '}
                   của MediCare.
                 </span>
               </label>
               {errors.agreeTerms && <p className="mt-1 text-xs text-red-500 ml-8">{errors.agreeTerms}</p>}
             </div>
 
-            {/* Submit */}
+            {/* Lỗi submit */}
+            {errors.submit && (
+              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl">
+                {errors.submit}
+              </div>
+            )}
+
+            {/* Submit button */}
             <button
-              type="submit"
-              disabled={isSubmitting}
+              type="submit" disabled={isSubmitting}
               className="w-full py-3 rounded-xl font-semibold text-white text-sm transition-all duration-200 flex items-center justify-center gap-2"
               style={{
                 backgroundColor: isSubmitting ? '#93c5fd' : '#1B6CA8',
@@ -566,16 +516,12 @@ export default function RegisterPage() {
                   </svg>
                   Đang xử lý...
                 </>
-              ) : (
-                'Tạo tài khoản'
-              )}
+              ) : 'Tạo tài khoản'}
             </button>
 
             <p className="text-center text-sm text-gray-500 mt-5">
               Đã có tài khoản?{' '}
-              <a href="/login" style={{ color: '#1B6CA8' }} className="font-medium hover:underline">
-                Đăng nhập
-              </a>
+              <a href="/login" style={{ color: '#1B6CA8' }} className="font-medium hover:underline">Đăng nhập</a>
             </p>
           </form>
         </div>
