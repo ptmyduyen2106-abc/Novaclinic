@@ -56,7 +56,9 @@ export function NavBar() {
               key={link.href}
               href={link.href}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                pathname.startsWith(link.href)
+                link.href === '/doctor'
+                  ? pathname === '/doctor'           // exact match cho trang kê đơn
+                  : pathname.startsWith(link.href)   // startsWith cho các trang còn lại
                   ? 'bg-blue-50 text-blue-700'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
