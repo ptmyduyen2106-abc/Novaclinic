@@ -4,6 +4,7 @@
 import { useState, FormEvent, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import Image from 'next/image'
 
 function LoginForm() {
   const searchParams = useSearchParams()
@@ -66,7 +67,6 @@ function LoginForm() {
           Bệnh nhân? Đăng ký tài khoản →
         </a>
       </div>
-
     </div>
   )
 }
@@ -76,13 +76,14 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 shadow-lg mb-4">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <path d="M16 4C9.37 4 4 9.37 4 16s5.37 12 12 12 12-5.37 12-12S22.63 4 16 4z" fill="white" opacity="0.3"/>
-              <path d="M20 15h-3v-3a1 1 0 00-2 0v3h-3a1 1 0 000 2h3v3a1 1 0 002 0v-3h3a1 1 0 000-2z" fill="white"/>
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-800">NovaClinic</h1>
+          <Image
+            src="/logo.png"
+            alt="NovaClinic"
+            width={128}
+            height={128}
+            className="object-contain mx-auto mb-2"
+            priority
+          />
           <p className="text-slate-500 text-sm mt-1">Hệ thống quản lý phòng khám thông minh</p>
         </div>
         <Suspense fallback={<div className="bg-white rounded-2xl p-8 text-center text-slate-400 text-sm">Đang tải…</div>}>

@@ -2,6 +2,7 @@
 // components/NavBar.tsx — Top navigation (role-aware)
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -46,13 +47,14 @@ export function NavBar() {
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 1.5C3.96 1.5 1.5 3.96 1.5 7S3.96 12.5 7 12.5 12.5 10.04 12.5 7 10.04 1.5 7 1.5z" fill="white" opacity="0.4"/>
-              <path d="M9 6.5H7.5V5a.5.5 0 00-1 0v1.5H5a.5.5 0 000 1h1.5V9a.5.5 0 001 0V7.5H9a.5.5 0 000-1z" fill="white"/>
-            </svg>
-          </div>
-          <span className="font-bold text-slate-800 text-sm hidden sm:block">Phòng Khám</span>
+          <Image
+            src="/logo.png"
+            alt="NovaClinic"
+            width={80}
+            height={32}
+            className="h-8 w-auto object-contain"
+            priority
+          />
         </Link>
 
         {/* Nav links */}
