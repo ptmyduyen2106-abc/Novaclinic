@@ -6,13 +6,14 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
 const NAV_LINKS = [
-  { href: '/doctor',    label: 'Bác sĩ',   roles: ['doctor', 'admin'],          icon: '🩺' },
-  { href: '/pharmacy',  label: 'Nhà thuốc', roles: ['pharma', 'admin'],          icon: '💊' },
-  { href: '/finance',   label: 'Tài chính', roles: ['admin'],                    icon: '📊' },
-  { href: '/patient',   label: 'Trang chủ', roles: ['patient'],                  icon: '🏠' },
-  { href: '/booking',   label: 'Đặt lịch',  roles: ['patient'],                  icon: '📅' },
-  { href: '/queue',     label: 'Hàng chờ',  roles: ['patient'],                  icon: '🔢' },
-  { href: '/records',   label: 'Hồ sơ',     roles: ['patient'],                  icon: '📋' },
+  { href: '/doctor',              label: 'Kê đơn',    roles: ['doctor', 'admin'], icon: '🩺' },
+  { href: '/doctor/appointments', label: 'Lịch hẹn',  roles: ['doctor'],          icon: '📅' },
+  { href: '/pharmacy',            label: 'Nhà thuốc', roles: ['pharma', 'admin'], icon: '💊' },
+  { href: '/finance',             label: 'Tài chính', roles: ['admin'],           icon: '📊' },
+  { href: '/patient',             label: 'Trang chủ', roles: ['patient'],         icon: '🏠' },
+  { href: '/booking',             label: 'Đặt lịch',  roles: ['patient'],         icon: '📅' },
+  { href: '/queue',               label: 'Hàng chờ',  roles: ['patient'],         icon: '🔢' },
+  { href: '/records',             label: 'Hồ sơ',     roles: ['patient'],         icon: '📋' },
 ]
 
 export function NavBar() {
@@ -33,6 +34,11 @@ export function NavBar() {
   async function handleSignOut() {
     await signOut()
     router.replace('/login')
+  }
+
+  function isActive(href: string) {
+    if (href === '/doctor') return pathname === '/doctor'
+    return pathname.startsWith(href)
   }
 
   return (
@@ -56,9 +62,7 @@ export function NavBar() {
               key={link.href}
               href={link.href}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                link.href === '/doctor'
-                  ? pathname === '/doctor'           // exact match cho trang kê đơn
-                  : pathname.startsWith(link.href)   // startsWith cho các trang còn lại
+                isActive(link.href)
                   ? 'bg-blue-50 text-blue-700'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
