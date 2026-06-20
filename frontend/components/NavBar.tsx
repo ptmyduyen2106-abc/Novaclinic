@@ -52,7 +52,7 @@ export function NavBar() {
             alt="NovaClinic"
             width={160}
             height={56}
-            className="h-8 w-auto object-contain"
+            className="h-12 w-auto object-contain"
             priority
           />
         </Link>
