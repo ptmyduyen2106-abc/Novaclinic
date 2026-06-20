@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { TermsModal } from '@/components/TermsModal';
+import { PrivacyModal } from '@/components/PrivacyModal';
 
 interface FormData {
   fullName: string;
@@ -44,6 +45,7 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
@@ -182,6 +184,7 @@ export default function RegisterPage() {
             Tài khoản của bạn đã được tạo. Vui lòng kiểm tra email để xác thực tài khoản
             trước khi đăng nhập.
           </p>
+          {/* ✅ FIX: thêm <Link> thay cho <a bị thiếu ở bản gốc */}
           <Link
             href="/login"
             className="inline-block w-full py-3 rounded-xl font-semibold text-white text-center transition-opacity hover:opacity-90"
@@ -631,9 +634,14 @@ export default function RegisterPage() {
                     Điều khoản sử dụng
                   </button>{' '}
                   và{' '}
-                  <a href="#" style={{ color: '#1B6CA8' }} className="font-medium hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => setShowPrivacy(true)}
+                    style={{ color: '#1B6CA8' }}
+                    className="font-medium hover:underline"
+                  >
                     Chính sách bảo mật
-                  </a>{' '}
+                  </button>{' '}
                   của NovaClinic.
                 </span>
               </label>
@@ -683,6 +691,7 @@ export default function RegisterPage() {
       </div>
 
       <TermsModal open={showTerms} onClose={() => setShowTerms(false)} />
+      <PrivacyModal open={showPrivacy} onClose={() => setShowPrivacy(false)} />
     </div>
   );
 }
