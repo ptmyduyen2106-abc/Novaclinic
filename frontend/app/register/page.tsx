@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { TermsModal } from '@/components/TermsModal';
 
 interface FormData {
   fullName: string;
@@ -42,6 +43,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
@@ -180,7 +182,6 @@ export default function RegisterPage() {
             Tài khoản của bạn đã được tạo. Vui lòng kiểm tra email để xác thực tài khoản
             trước khi đăng nhập.
           </p>
-          {/* ✅ FIX: thêm <Link> thay cho <a bị thiếu ở bản gốc */}
           <Link
             href="/login"
             className="inline-block w-full py-3 rounded-xl font-semibold text-white text-center transition-opacity hover:opacity-90"
@@ -621,9 +622,14 @@ export default function RegisterPage() {
                 </div>
                 <span className="text-sm text-gray-600 leading-relaxed">
                   Tôi đã đọc và đồng ý với{' '}
-                  <a href="#" style={{ color: '#1B6CA8' }} className="font-medium hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => setShowTerms(true)}
+                    style={{ color: '#1B6CA8' }}
+                    className="font-medium hover:underline"
+                  >
                     Điều khoản sử dụng
-                  </a>{' '}
+                  </button>{' '}
                   và{' '}
                   <a href="#" style={{ color: '#1B6CA8' }} className="font-medium hover:underline">
                     Chính sách bảo mật
@@ -675,6 +681,8 @@ export default function RegisterPage() {
           </form>
         </div>
       </div>
+
+      <TermsModal open={showTerms} onClose={() => setShowTerms(false)} />
     </div>
   );
 }
