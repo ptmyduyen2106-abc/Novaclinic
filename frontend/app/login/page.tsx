@@ -79,9 +79,9 @@ export default function LoginPage() {
           <Image
             src="/logo.png"
             alt="NovaClinic"
-            width={128}
-            height={128}
-            className="object-contain mx-auto mb-2"
+            width={195}
+            height={154}
+            className="object-contain mx-auto mb-2 h-28 w-auto"
             priority
           />
           <p className="text-slate-500 text-sm mt-1">Hệ thống quản lý phòng khám thông minh</p>

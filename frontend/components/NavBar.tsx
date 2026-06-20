@@ -50,8 +50,8 @@ export function NavBar() {
           <Image
             src="/logo.png"
             alt="NovaClinic"
-            width={160}
-            height={56}
+            width={195}
+            height={154}
             className="h-12 w-auto object-contain"
             priority
           />
