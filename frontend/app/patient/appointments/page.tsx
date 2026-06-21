@@ -113,24 +113,9 @@ export default function AppointmentsPage() {
       return;
     }
 
-    // Tra patients.id theo user_id — bảng "patients" có khóa chính "id" riêng,
-    // KHÔNG giống auth.uid(). appointments.patient_id phải trỏ tới patients.id
-    // (tương tự cách trang bác sĩ tra doctors.id theo user_id).
-    const { data: patient, error: patientErr } = await supabase
-      .from('patients')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!patient) {
-      setSubmitting(false);
-      setSubmitError('Không tìm thấy hồ sơ bệnh nhân của bạn. Vui lòng hoàn tất hồ sơ cá nhân trước khi đặt lịch.');
-      console.error('fetchPatient error:', patientErr);
-      return;
-    }
-
+    // patients.id CHÍNH LÀ auth.users.id (FK 1-1) — không cần tra qua bảng patients nữa
     const { error } = await supabase.from('appointments').insert({
-      patient_id: patient.id, // ✅ dùng patients.id, không dùng user.id
+      patient_id: user.id,
       doctor_id: selectedDoctor.id,
       doctor_name: selectedDoctor.name,
       specialty: selectedDoctor.specialty,
