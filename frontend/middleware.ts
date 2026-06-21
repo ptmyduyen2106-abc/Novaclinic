@@ -45,18 +45,30 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  const { data: user } = await supabase
-    .from('users').select('role').eq('id', session.user.id).single()
+  // ── Xác định role ──────────────────────────────────────────────
+  // Bảng "users" chứa role cho bác sĩ / admin / dược.
+  // Bệnh nhân nằm ở bảng "patients" riêng (không có cột role),
+  // nên nếu không tìm thấy ở "users" thì kiểm tra tiếp ở "patients".
+  const { data: userRow } = await supabase
+    .from('users').select('role').eq('id', session.user.id).maybeSingle()
 
-  if (!user) return NextResponse.redirect(new URL('/login', req.url))
+  let role: string | null = userRow?.role ?? null
 
-  const allowed = ROLE_ROUTES[user.role] ?? []
+  if (!role) {
+    const { data: patientRow } = await supabase
+      .from('patients').select('id').eq('id', session.user.id).maybeSingle()
+    if (patientRow) role = 'patient'
+  }
+
+  if (!role) return NextResponse.redirect(new URL('/login', req.url))
+
+  const allowed = ROLE_ROUTES[role] ?? []
   const isAllowed = allowed.some((r) => path.startsWith(r))
 
   if (!isAllowed) {
-    const home = user.role === 'doctor'  ? '/doctor'
-               : user.role === 'pharma'  ? '/pharmacy'
-               : user.role === 'admin'   ? '/finance'
+    const home = role === 'doctor'  ? '/doctor'
+               : role === 'pharma'  ? '/pharmacy'
+               : role === 'admin'   ? '/finance'
                : '/patient'
     return NextResponse.redirect(new URL(home, req.url))
   }
