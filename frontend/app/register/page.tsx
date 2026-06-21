@@ -25,6 +25,82 @@ interface FormErrors {
   [key: string]: string;
 }
 
+// ─── Map lỗi thô từ backend/Supabase → thông báo thân thiện cho người dùng ───
+// field (nếu có) sẽ được gắn thêm lỗi ngay dưới ô input tương ứng để người dùng
+// biết chính xác cần sửa ở đâu, không chỉ đọc một dòng lỗi chung chung.
+function getFriendlyError(raw: string): { message: string; field?: keyof FormData } {
+  const msg = raw.toLowerCase();
+
+  // Email đã tồn tại (Supabase Auth: "User already registered")
+  if (msg.includes('already registered') || (msg.includes('email') && msg.includes('exist'))) {
+    return {
+      field: 'email',
+      message: 'Email này đã được đăng ký trước đó. Vui lòng đăng nhập hoặc dùng email khác.',
+    };
+  }
+
+  // Trùng số điện thoại
+  if (msg.includes('phone') && (msg.includes('duplicate') || msg.includes('exist') || msg.includes('unique'))) {
+    return {
+      field: 'phone',
+      message: 'Số điện thoại này đã được dùng cho một tài khoản khác.',
+    };
+  }
+
+  // Trùng tên đăng nhập
+  if (msg.includes('username') && (msg.includes('duplicate') || msg.includes('exist') || msg.includes('unique') || msg.includes('taken'))) {
+    return {
+      field: 'username',
+      message: 'Tên đăng nhập đã tồn tại. Vui lòng chọn một tên khác.',
+    };
+  }
+
+  // Trùng CCCD/CMND
+  if ((msg.includes('id_number') || msg.includes('cccd') || msg.includes('cmnd')) &&
+      (msg.includes('duplicate') || msg.includes('exist') || msg.includes('unique'))) {
+    return {
+      field: 'idNumber',
+      message: 'Số CCCD/CMND này đã được đăng ký trước đó.',
+    };
+  }
+
+  // Email sai định dạng (backend tự validate lại)
+  if (msg.includes('invalid') && msg.includes('email')) {
+    return { field: 'email', message: 'Địa chỉ email không hợp lệ.' };
+  }
+
+  // Mật khẩu không đạt yêu cầu phía backend
+  if (msg.includes('password')) {
+    return {
+      field: 'password',
+      message: 'Mật khẩu chưa đáp ứng yêu cầu bảo mật. Vui lòng dùng mật khẩu khác (tối thiểu 8 ký tự).',
+    };
+  }
+
+  // Lỗi mạng / không gọi được server
+  if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('load failed')) {
+    return { message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.' };
+  }
+
+  // Server quá tải / lỗi 500
+  if (msg.includes('500') || msg.includes('internal server') || msg.includes('lỗi http 5')) {
+    return { message: 'Hệ thống đang gặp sự cố. Vui lòng thử lại sau ít phút.' };
+  }
+
+  // Quá thời gian chờ
+  if (msg.includes('timeout') || msg.includes('timed out')) {
+    return { message: 'Yêu cầu mất quá nhiều thời gian xử lý. Vui lòng thử lại.' };
+  }
+
+  // Phản hồi không hợp lệ từ server
+  if (msg.includes('phản hồi không hợp lệ')) {
+    return { message: 'Máy chủ phản hồi không đúng định dạng. Vui lòng thử lại sau.' };
+  }
+
+  // Không xác định được — vẫn hiện nguyên văn để không giấu thông tin debug
+  return { message: raw || 'Đăng ký thất bại. Vui lòng thử lại.' };
+}
+
 export default function RegisterPage() {
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
@@ -112,6 +188,12 @@ export default function RegisterPage() {
     e.preventDefault();
     if (!validate()) return;
     setIsSubmitting(true);
+    // xoá lỗi submit cũ trước khi thử lại
+    setErrors(prev => {
+      const next = { ...prev };
+      delete next.submit;
+      return next;
+    });
 
     try {
       const res = await fetch(`${API_URL}/api/register`, {
@@ -139,12 +221,31 @@ export default function RegisterPage() {
       }
 
       if (!res.ok || json.success === false) {
-        throw new Error(json.error ?? json.message ?? `Lỗi HTTP ${res.status}`);
+        const rawMessage = json.error ?? json.message ?? `Lỗi HTTP ${res.status}`;
+        const { message, field } = getFriendlyError(rawMessage);
+        setErrors(prev => ({
+          ...prev,
+          submit: message,
+          ...(field ? { [field]: message } : {}),
+        }));
+        return;
       }
 
       setSubmitSuccess(true);
     } catch (err) {
-      setErrors({ submit: err instanceof Error ? err.message : 'Đăng ký thất bại' });
+      let rawMessage = 'Đăng ký thất bại';
+      if (err instanceof TypeError) {
+        // fetch() ném TypeError khi không kết nối được tới server (mất mạng, sai API_URL, CORS...)
+        rawMessage = 'failed to fetch';
+      } else if (err instanceof Error) {
+        rawMessage = err.message;
+      }
+      const { message, field } = getFriendlyError(rawMessage);
+      setErrors(prev => ({
+        ...prev,
+        submit: message,
+        ...(field ? { [field]: message } : {}),
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -661,8 +762,11 @@ export default function RegisterPage() {
 
             {/* ── Lỗi submit ── */}
             {errors.submit && (
-              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl">
-                {errors.submit}
+              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl flex items-start gap-2">
+                <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <span>{errors.submit}</span>
               </div>
             )}
 
