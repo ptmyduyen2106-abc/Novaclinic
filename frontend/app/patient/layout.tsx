@@ -113,7 +113,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
       {/* ── Sidebar ── */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 z-30 flex flex-col transition-transform duration-300 lg:static lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-screen w-64 z-30 flex flex-col transition-transform duration-300 lg:sticky lg:top-0 lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ background: 'linear-gradient(180deg, #1B6CA8 0%, #0D4A7A 100%)' }}
