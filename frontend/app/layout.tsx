@@ -6,6 +6,11 @@ import { AuthProvider } from '@/contexts/AuthContext'
 export const metadata: Metadata = {
   title: 'Phòng Khám — Hệ thống quản lý',
   description: 'Phần mềm quản lý phòng khám: Bác sĩ · Nhà thuốc · Tài chính',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
