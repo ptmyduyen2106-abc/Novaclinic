@@ -8,15 +8,16 @@ import { useAuth } from '@/contexts/AuthContext'
 
 const NAV_LINKS = [
   { href: '/doctor',              label: 'Kê đơn',    roles: ['doctor', 'admin'] },
-  { href: '/doctor/appointments', label: 'Lịch hẹn',  roles: ['doctor']},
+  { href: '/doctor/appointments', label: 'Lịch hẹn',  roles: ['doctor'] },
   { href: '/pharmacy',            label: 'Nhà thuốc', roles: ['pharma', 'admin'] },
-  { href: '/finance',             label: 'Tài chính', roles: ['admin']},
-  { href: '/patient',             label: 'Trang chủ', roles: ['patient']},
+  { href: '/finance',             label: 'Tài chính', roles: ['admin'] },
+  { href: '/patient',             label: 'Trang chủ', roles: ['patient'] },
   { href: '/booking',             label: 'Đặt lịch',  roles: ['patient'] },
   { href: '/queue',               label: 'Hàng chờ',  roles: ['patient'] },
   { href: '/records',             label: 'Hồ sơ',     roles: ['patient'] },
-  { href: '/patient-list',        label: 'Bệnh nhân', roles: ['admin']},
+  { href: '/patient-list',        label: 'Bệnh nhân', roles: ['admin'] },
 ]
+
 export function NavBar() {
   const { user, signOut } = useAuth()
   const pathname = usePathname()
@@ -69,8 +70,7 @@ export function NavBar() {
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              <span className="text-base leading-none">{link.icon}</span>
-              <span className="hidden sm:inline">{link.label}</span>
+              <span>{link.label}</span>
             </Link>
           ))}
         </div>
