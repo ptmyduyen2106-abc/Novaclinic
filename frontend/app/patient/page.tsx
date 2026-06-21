@@ -53,7 +53,7 @@ export default function PatientDashboardPage() {
       if (!authUser) return;
 
       const { data: profile } = await supabase
-        .from('users')
+        .from('patients')
         .select('*')
         .eq('id', authUser.id)
         .single();
