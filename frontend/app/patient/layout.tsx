@@ -9,8 +9,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 
 interface UserProfile {
   id: string;
-  name: string;
-  role: string;
+  full_name: string;
 }
 
 const navItems = [
@@ -66,16 +65,22 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
         router.push('/login');
         return;
       }
+
+      // ── Xác thực vai trò patient ─────────────────────────────────────
+      // Hồ sơ bệnh nhân nằm ở bảng "patients" (không có cột role riêng),
+      // khác với bảng "users" dùng cho bác sĩ/admin/dược.
+      // Dùng maybeSingle() để không bị lỗi 406 khi không có row khớp.
       const { data: profile } = await supabase
-        .from('users')
+        .from('patients')
         .select('*')
         .eq('id', authUser.id)
-        .single();
+        .maybeSingle();
 
-      if (profile?.role !== 'patient') {
+      if (!profile) {
         router.push('/login');
         return;
       }
+
       setUser(profile);
       setLoading(false);
     };
@@ -175,10 +180,10 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 text-white"
               style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
             >
-              {user?.name?.charAt(0)?.toUpperCase() ?? 'B'}
+              {user?.full_name?.charAt(0)?.toUpperCase() ?? 'B'}
             </div>
             <div className="min-w-0">
-              <p className="text-white text-sm font-medium truncate">{user?.name ?? 'Bệnh nhân'}</p>
+              <p className="text-white text-sm font-medium truncate">{user?.full_name ?? 'Bệnh nhân'}</p>
               <p className="text-blue-300 text-xs">Bệnh nhân</p>
             </div>
           </div>
@@ -222,7 +227,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
             style={{ backgroundColor: '#1B6CA8' }}
             title="Hồ sơ cá nhân"
           >
-            {user?.name?.charAt(0)?.toUpperCase() ?? 'B'}
+            {user?.full_name?.charAt(0)?.toUpperCase() ?? 'B'}
           </Link>
         </header>
 
