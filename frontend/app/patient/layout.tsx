@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { NotificationBell } from '@/components/NotificationBell';
 
 interface UserProfile {
   id: string;
@@ -206,13 +207,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
           </p>
 
           {/* Notification */}
-          <button className="relative p-2 rounded-xl text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
-          </button>
-
+          {user && <NotificationBell userId={user.id} />}
           {/* Avatar */}
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
