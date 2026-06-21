@@ -15,8 +15,9 @@ const NAV_LINKS = [
   { href: '/booking',             label: 'Đặt lịch',  roles: ['patient'],         icon: '📅' },
   { href: '/queue',               label: 'Hàng chờ',  roles: ['patient'],         icon: '🔢' },
   { href: '/records',             label: 'Hồ sơ',     roles: ['patient'],         icon: '📋' },
+  { href: '/patients',            label: 'Bệnh nhân', roles: ['admin'], icon: '🧑‍🤝‍🧑' },
+  { href: '/patient-list',        label: 'Bệnh nhân', roles: ['admin'], icon: '🧑‍🤝‍🧑' },
 ]
-
 export function NavBar() {
   const { user, signOut } = useAuth()
   const pathname = usePathname()
