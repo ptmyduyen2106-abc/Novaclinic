@@ -226,12 +226,7 @@ export default function RegisterPage() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="#1B6CA8">
-                <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm1 13h-2v-6h2v6zm0-8h-2V5h2v2z" />
-              </svg>
-            </div>
-            <span className="text-white font-bold text-lg tracking-wide">NovaClinic</span>
+            <img src="/logo.png" alt="NovaClinic" className="h-10 w-auto" />
           </div>
           <h1 className="text-4xl font-bold text-white leading-snug mb-4">
             Chăm sóc sức khỏe
@@ -268,15 +263,7 @@ export default function RegisterPage() {
         <div className="max-w-2xl w-full mx-auto">
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-8 lg:hidden">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: '#1B6CA8' }}
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
-                <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm1 13h-2v-6h2v6zm0-8h-2V5h2v2z" />
-              </svg>
-            </div>
-            <span className="font-bold text-gray-900">NovaClinic</span>
+            <img src="/logo.png" alt="NovaClinic" className="h-8 w-auto" />
           </div>
 
           <div className="mb-8">
