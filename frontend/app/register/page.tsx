@@ -226,7 +226,15 @@ export default function RegisterPage() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <img src="/logo.png" alt="NovaClinic" className="h-10 w-auto" />
+            <div className="bg-white rounded-2xl p-2.5 shadow-lg shrink-0">
+              <img src="/logo.png" alt="NovaClinic" className="h-9 w-auto" />
+            </div>
+            <div>
+              <p className="text-white font-bold text-lg leading-tight">NovaClinic</p>
+              <p className="text-blue-200 text-xs leading-tight">
+                Hệ thống phòng khám thông minh
+              </p>
+            </div>
           </div>
           <h1 className="text-4xl font-bold text-white leading-snug mb-4">
             Chăm sóc sức khỏe
@@ -263,7 +271,15 @@ export default function RegisterPage() {
         <div className="max-w-2xl w-full mx-auto">
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-8 lg:hidden">
-            <img src="/logo.png" alt="NovaClinic" className="h-8 w-auto" />
+            <div className="bg-white rounded-xl p-1.5 shadow-md border border-gray-100 shrink-0">
+              <img src="/logo.png" alt="NovaClinic" className="h-7 w-auto" />
+            </div>
+            <div>
+              <p className="text-gray-900 font-bold text-base leading-tight">NovaClinic</p>
+              <p className="text-gray-500 text-xs leading-tight">
+                Hệ thống phòng khám thông minh
+              </p>
+            </div>
           </div>
 
           <div className="mb-8">
