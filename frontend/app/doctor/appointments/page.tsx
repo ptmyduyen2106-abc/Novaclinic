@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, apiCreateRecord } from '@/lib/supabase';
 import { NavBar } from '@/components/NavBar';
+import { RxBuilder } from '@/components/RxBuilder';
+import type { PrescriptionItem, Service } from '@/types';
 
 interface Appointment {
   id: string;
@@ -38,6 +40,15 @@ function calcAge(dob?: string) {
   return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
 }
 
+const SERVICE_PRESETS: Service[] = [
+  { name: 'Khám bệnh',        price: 100000 },
+  { name: 'Tái khám',         price: 50000  },
+  { name: 'Khám chuyên khoa', price: 150000 },
+  { name: 'Siêu âm',          price: 120000 },
+  { name: 'Xét nghiệm máu',   price: 200000 },
+  { name: 'Điện tâm đồ',      price: 80000  },
+];
+
 const STATUS_CFG = {
   upcoming:  { label: 'Chờ khám',  color: '#1B6CA8', bg: '#EBF4FC' },
   completed: { label: 'Đã khám',   color: '#10b981', bg: '#ECFDF5' },
@@ -51,10 +62,16 @@ export default function DoctorAppointmentsPage() {
   const [selected, setSelected]         = useState<Appointment | null>(null);
   const [saving, setSaving]             = useState(false);
   const [savedId, setSavedId]           = useState<string | null>(null);
+  const [formError, setFormError]       = useState('');
 
-  // form state cho modal
+  // form state cho modal — giống hệt DoctorForm
   const [diagnosis, setDiagnosis]       = useState('');
-  const [prescription, setPrescription] = useState('');
+  const [advice, setAdvice]             = useState('');
+  const [serviceNote, setServiceNote]   = useState('');
+  const [prescription, setPrescription] = useState<PrescriptionItem[]>([]);
+  const [selectedServices, setSelectedServices] = useState<Service[]>([SERVICE_PRESETS[0]]);
+  const [customService, setCustomService]           = useState('');
+  const [customServicePrice, setCustomServicePrice] = useState('');
 
   useEffect(() => { fetchAppointments(); }, []);
 
@@ -106,21 +123,75 @@ export default function DoctorAppointmentsPage() {
   function openModal(appt: Appointment) {
     setSelected(appt);
     setDiagnosis(appt.diagnosis ?? '');
-    setPrescription(appt.prescription ?? '');
+    setAdvice('');
+    setServiceNote('');
+    setPrescription([]);
+    setSelectedServices([SERVICE_PRESETS[0]]);
+    setFormError('');
   }
 
+  function closeModal() {
+    setSelected(null);
+    setFormError('');
+  }
+
+  function toggleService(svc: Service) {
+    setSelectedServices(prev =>
+      prev.find(s => s.name === svc.name)
+        ? prev.filter(s => s.name !== svc.name)
+        : [...prev, svc]
+    );
+  }
+
+  function addCustomService() {
+    if (!customService.trim()) return;
+    setSelectedServices(prev => [...prev, { name: customService.trim(), price: Number(customServicePrice) || 0 }]);
+    setCustomService('');
+    setCustomServicePrice('');
+  }
+
+  const drugTotal    = prescription.reduce((s, p) => s + p.quantity * p.unitPrice, 0);
+  const serviceTotal = selectedServices.reduce((s, sv) => s + sv.price, 0);
+  const totalPrice   = drugTotal + serviceTotal;
+
+  // ── Hoàn tất ca khám: tạo record cho Pharma + cập nhật trạng thái appointment ──
   async function handleComplete() {
     if (!selected) return;
+    if (!diagnosis.trim()) { setFormError('Vui lòng nhập chẩn đoán'); return; }
+
     setSaving(true);
-    await supabase
-      .from('appointments')
-      .update({ status: 'completed', diagnosis, prescription })
-      .eq('id', selected.id);
-    setSaving(false);
-    setSavedId(selected.id);
-    setSelected(null);
-    setTimeout(() => setSavedId(null), 3000);
-    await fetchAppointments();
+    setFormError('');
+    try {
+      // 1. Tạo record trong bảng records (qua C++ backend) — để Pharma thấy được
+      await apiCreateRecord({
+        patientName: selected.patient_name ?? 'Bệnh nhân',
+        yearOfBirth: selected.patient_date_of_birth
+          ? new Date(selected.patient_date_of_birth).getFullYear()
+          : 0,
+        phone:       selected.patient_phone ?? '',
+        diagnosis:   diagnosis.trim(),
+        prescription,
+        services:    selectedServices,
+        serviceNote: serviceNote.trim(),
+        advice:      advice.trim(),
+        status:      'pending',
+      });
+
+      // 2. Cập nhật trạng thái appointment để đồng bộ 2 phía
+      await supabase
+        .from('appointments')
+        .update({ status: 'completed', diagnosis: diagnosis.trim() })
+        .eq('id', selected.id);
+
+      setSavedId(selected.id);
+      closeModal();
+      setTimeout(() => setSavedId(null), 3000);
+      await fetchAppointments();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Lỗi lưu dữ liệu');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleCancel(id: string) {
@@ -318,14 +389,14 @@ export default function DoctorAppointmentsPage() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
-            Đã hoàn tất ca khám
+            Đã hoàn tất ca khám &amp; gửi sang nhà thuốc
           </div>
         )}
 
-        {/* ── Modal kê đơn / xem kết quả ── */}
+        {/* ── Modal kê đơn / xem kết quả — đồng bộ với DoctorForm ── */}
         {selected && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
+            <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl my-8">
               {/* Modal header */}
               <div className="flex items-start justify-between p-6 border-b border-gray-100">
                 <div>
@@ -337,7 +408,7 @@ export default function DoctorAppointmentsPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setSelected(null)}
+                  onClick={closeModal}
                   className="p-1.5 rounded-xl text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -346,7 +417,13 @@ export default function DoctorAppointmentsPage() {
                 </button>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+                {formError && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3">
+                    {formError}
+                  </div>
+                )}
+
                 {/* Patient summary */}
                 <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-2 gap-2 text-sm">
                   {[
@@ -374,41 +451,130 @@ export default function DoctorAppointmentsPage() {
                   )}
                 </div>
 
-                {/* Diagnosis */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                    Chẩn đoán
-                  </label>
-                  <textarea
-                    value={diagnosis}
-                    onChange={e => setDiagnosis(e.target.value)}
-                    disabled={selected.status === 'completed'}
-                    rows={2}
-                    placeholder="VD: Viêm họng cấp, viêm amidan..."
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-none disabled:bg-gray-50 disabled:text-gray-500"
-                  />
+                {/* Chẩn đoán & lời dặn */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      Chẩn đoán *
+                    </label>
+                    <textarea
+                      value={diagnosis}
+                      onChange={e => setDiagnosis(e.target.value)}
+                      disabled={selected.status === 'completed'}
+                      rows={2}
+                      placeholder="VD: Viêm họng cấp, viêm amidan..."
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-none disabled:bg-gray-50 disabled:text-gray-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      Lời dặn bệnh nhân
+                    </label>
+                    <textarea
+                      value={advice}
+                      onChange={e => setAdvice(e.target.value)}
+                      disabled={selected.status === 'completed'}
+                      rows={2}
+                      placeholder="Nghỉ ngơi, uống nhiều nước, tái khám sau 5 ngày..."
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-none disabled:bg-gray-50 disabled:text-gray-500"
+                    />
+                  </div>
                 </div>
 
-                {/* Prescription */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                    Đơn thuốc
-                  </label>
-                  <textarea
-                    value={prescription}
-                    onChange={e => setPrescription(e.target.value)}
-                    disabled={selected.status === 'completed'}
-                    rows={4}
-                    placeholder={`VD:\n- Paracetamol 500mg: 2 viên/ngày x 5 ngày\n- Amoxicillin 500mg: 1 viên x 3/ngày x 7 ngày`}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-none disabled:bg-gray-50 disabled:text-gray-500"
-                  />
-                </div>
+                {/* Toa thuốc — dùng chung RxBuilder với form thường */}
+                {selected.status !== 'completed' && (
+                  <RxBuilder items={prescription} onChange={setPrescription} />
+                )}
+
+                {/* Dịch vụ */}
+                {selected.status !== 'completed' && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Dịch vụ</h3>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {SERVICE_PRESETS.map(svc => {
+                        const isSelected = selectedServices.some(s => s.name === svc.name);
+                        return (
+                          <button
+                            key={svc.name}
+                            type="button"
+                            onClick={() => toggleService(svc)}
+                            className={`text-xs px-3 py-1.5 rounded-full border transition font-medium ${
+                              isSelected
+                                ? 'bg-blue-600 border-blue-600 text-white'
+                                : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300'
+                            }`}
+                          >
+                            {svc.name} — {svc.price.toLocaleString('vi-VN')}đ
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={customService}
+                        onChange={e => setCustomService(e.target.value)}
+                        placeholder="Dịch vụ khác…"
+                        className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                      <input
+                        type="number"
+                        value={customServicePrice}
+                        onChange={e => setCustomServicePrice(e.target.value)}
+                        placeholder="Giá"
+                        min={0}
+                        step={1000}
+                        className="w-28 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={addCustomService}
+                        className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition"
+                      >
+                        Thêm
+                      </button>
+                    </div>
+                    {selectedServices.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {selectedServices.map((svc, i) => (
+                          <div key={i} className="flex justify-between text-xs text-gray-600 px-1">
+                            <span>{svc.name}</span>
+                            <span>{svc.price.toLocaleString('vi-VN')}đ</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-3">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                        Ghi chú dịch vụ
+                      </label>
+                      <input
+                        type="text"
+                        value={serviceNote}
+                        onChange={e => setServiceNote(e.target.value)}
+                        placeholder="Kết quả xét nghiệm, siêu âm…"
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Tổng tiền */}
+                {selected.status !== 'completed' && (
+                  <div className="border-t border-gray-100 pt-3 flex gap-6 text-xs text-gray-500">
+                    <span>Thuốc: <strong className="text-gray-700">{drugTotal.toLocaleString('vi-VN')}đ</strong></span>
+                    <span>Dịch vụ: <strong className="text-gray-700">{serviceTotal.toLocaleString('vi-VN')}đ</strong></span>
+                    <span className="ml-auto font-bold" style={{ color: '#1B6CA8' }}>
+                      Tổng: {totalPrice.toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Modal footer */}
-              <div className="flex gap-3 px-6 pb-6">
+              <div className="flex gap-3 px-6 pb-6 pt-2">
                 <button
-                  onClick={() => setSelected(null)}
+                  onClick={closeModal}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-all"
                 >
                   {selected.status === 'completed' ? 'Đóng' : 'Huỷ bỏ'}
@@ -426,7 +592,7 @@ export default function DoctorAppointmentsPage() {
                         <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v8H4z" />
                       </svg>
                     )}
-                    {saving ? 'Đang lưu...' : '✓ Hoàn tất ca khám'}
+                    {saving ? 'Đang lưu...' : '✓ Hoàn tất & Gửi nhà thuốc'}
                   </button>
                 )}
               </div>
