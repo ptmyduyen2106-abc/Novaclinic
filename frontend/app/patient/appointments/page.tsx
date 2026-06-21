@@ -67,6 +67,7 @@ export default function AppointmentsPage() {
   const [success, setSuccess] = useState(false);
   const [takenSlots, setTakenSlots] = useState<string[]>([]);
   const [note, setNote] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
   // Calendar state
   const today = new Date();
@@ -103,12 +104,33 @@ export default function AppointmentsPage() {
   async function handleSubmit() {
     if (!selectedDoctor || !selectedDate || !selectedTime) return;
     setSubmitting(true);
+    setSubmitError('');
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setSubmitting(false);
+      setSubmitError('Không xác định được người dùng, vui lòng đăng nhập lại.');
+      return;
+    }
+
+    // Tra patients.id theo user_id — bảng "patients" có khóa chính "id" riêng,
+    // KHÔNG giống auth.uid(). appointments.patient_id phải trỏ tới patients.id
+    // (tương tự cách trang bác sĩ tra doctors.id theo user_id).
+    const { data: patient, error: patientErr } = await supabase
+      .from('patients')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!patient) {
+      setSubmitting(false);
+      setSubmitError('Không tìm thấy hồ sơ bệnh nhân của bạn. Vui lòng hoàn tất hồ sơ cá nhân trước khi đặt lịch.');
+      console.error('fetchPatient error:', patientErr);
+      return;
+    }
 
     const { error } = await supabase.from('appointments').insert({
-      patient_id: user.id,
+      patient_id: patient.id, // ✅ dùng patients.id, không dùng user.id
       doctor_id: selectedDoctor.id,
       doctor_name: selectedDoctor.name,
       specialty: selectedDoctor.specialty,
@@ -121,6 +143,9 @@ export default function AppointmentsPage() {
     setSubmitting(false);
     if (!error) {
       setSuccess(true);
+    } else {
+      setSubmitError('Đặt lịch thất bại, vui lòng thử lại.');
+      console.error('insert appointment error:', error);
     }
   }
 
@@ -131,6 +156,7 @@ export default function AppointmentsPage() {
     setSelectedTime('');
     setNote('');
     setSuccess(false);
+    setSubmitError('');
   }
 
   const filteredDoctors = doctors.filter(d => {
@@ -551,6 +577,12 @@ export default function AppointmentsPage() {
               )}
             </div>
           </div>
+
+          {submitError && (
+            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3">
+              {submitError}
+            </div>
+          )}
 
           <button
             onClick={handleSubmit}
