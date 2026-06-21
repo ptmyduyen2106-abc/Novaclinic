@@ -6,12 +6,12 @@ import { NavBar } from '@/components/NavBar'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 
-// FIX: query từ bảng users (role=patient) thay vì bảng patients
+// Danh sách bệnh nhân lấy trực tiếp từ bảng "patients"
+// (Bệnh nhân không nằm trong bảng "users" — bảng đó chỉ chứa bác sĩ/admin/dược)
 interface PatientRow {
   id: string
-  name: string           // users.name
-  phone: string | null   // users.phone
-  role: string
+  name: string           // patients.full_name
+  phone: string | null   // patients.phone
   created_at: string
 }
 
@@ -31,17 +31,21 @@ export default function AdminPatientsPage() {
     setLoading(true)
     setError(null)
 
-    //  FIX: lấy từ users với role = 'patient'
     const { data, error } = await supabase
-      .from('users')
-      .select('id, name, phone, role, created_at')
-      .eq('role', 'patient')
+      .from('patients')
+      .select('id, full_name, phone, created_at')
       .order('created_at', { ascending: false })
 
     if (error) {
       setError(error.message)
     } else {
-      setPatients(data ?? [])
+      const mapped = (data ?? []).map((row) => ({
+        id: row.id,
+        name: row.full_name,
+        phone: row.phone,
+        created_at: row.created_at,
+      }))
+      setPatients(mapped)
     }
     setLoading(false)
   }
