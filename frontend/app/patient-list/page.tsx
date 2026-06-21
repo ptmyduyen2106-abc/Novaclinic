@@ -6,32 +6,13 @@ import { NavBar } from '@/components/NavBar'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 
+// FIX: query từ bảng users (role=patient) thay vì bảng patients
 interface PatientRow {
   id: string
-  full_name: string
-  date_of_birth: string | null
-  gender: string | null
-  phone: string | null
-  address: string | null
-  blood_type: string | null
-  allergies: string | null
+  name: string           // users.name
+  phone: string | null   // users.phone
+  role: string
   created_at: string
-}
-
-const GENDER_LABEL: Record<string, string> = {
-  male: 'Nam',
-  female: 'Nữ',
-  other: 'Khác',
-}
-
-function calcAge(dob: string | null): string {
-  if (!dob) return '—'
-  const birth = new Date(dob)
-  const today = new Date()
-  let age = today.getFullYear() - birth.getFullYear()
-  const m = today.getMonth() - birth.getMonth()
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
-  return `${age} tuổi`
 }
 
 export default function AdminPatientsPage() {
@@ -49,9 +30,12 @@ export default function AdminPatientsPage() {
   async function fetchPatients() {
     setLoading(true)
     setError(null)
+
+    //  FIX: lấy từ users với role = 'patient'
     const { data, error } = await supabase
-      .from('patients')
-      .select('*')
+      .from('users')
+      .select('id, name, phone, role, created_at')
+      .eq('role', 'patient')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -66,9 +50,8 @@ export default function AdminPatientsPage() {
     const q = search.trim().toLowerCase()
     if (!q) return true
     return (
-      p.full_name.toLowerCase().includes(q) ||
-      (p.phone ?? '').toLowerCase().includes(q) ||
-      (p.address ?? '').toLowerCase().includes(q)
+      p.name.toLowerCase().includes(q) ||
+      (p.phone ?? '').toLowerCase().includes(q)
     )
   })
 
@@ -89,7 +72,7 @@ export default function AdminPatientsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo tên, số điện thoại, địa chỉ…"
+            placeholder="Tìm theo tên, số điện thoại…"
             className="input-field"
           />
         </div>
@@ -118,32 +101,15 @@ export default function AdminPatientsPage() {
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-semibold text-slate-800">{p.full_name}</p>
-                    {p.gender && (
-                      <span className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
-                        {GENDER_LABEL[p.gender] ?? p.gender}
-                      </span>
-                    )}
-                    <span className="text-xs text-slate-400">{calcAge(p.date_of_birth)}</span>
+                    <p className="text-sm font-semibold text-slate-800">{p.name}</p>
                   </div>
                   <div className="mt-1.5 space-y-0.5">
                     {p.phone && (
                       <p className="text-xs text-slate-500">📞 {p.phone}</p>
                     )}
-                    {p.address && (
-                      <p className="text-xs text-slate-500 truncate">📍 {p.address}</p>
-                    )}
-                    {p.allergies && (
-                      <p className="text-xs text-red-500">⚠️ Dị ứng: {p.allergies}</p>
-                    )}
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  {p.blood_type && (
-                    <span className="text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
-                      {p.blood_type}
-                    </span>
-                  )}
                   <p className="text-xs text-slate-400 mt-1.5">
                     {new Date(p.created_at).toLocaleDateString('vi-VN')}
                   </p>
