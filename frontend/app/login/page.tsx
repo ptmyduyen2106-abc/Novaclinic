@@ -87,7 +87,12 @@ function LoginForm() {
             placeholder="bacsi@phongkham.vn" required className="input-field" />
         </div>
         <div>
-          <label htmlFor="password" className="label-sm">Mật khẩu</label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="password" className="label-sm">Mật khẩu</label>
+            <a href="/forgot-password" className="text-xs text-blue-600 hover:text-blue-700">
+              Quên mật khẩu?
+            </a>
+          </div>
           <input id="password" type="password" value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••" required className="input-field" />
