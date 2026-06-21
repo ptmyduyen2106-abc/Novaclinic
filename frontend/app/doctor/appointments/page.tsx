@@ -89,15 +89,16 @@ export default function DoctorAppointmentsPage() {
 
     if (!doctor) { setLoading(false); return; }
 
-    // ✅ FIX: join từ users (có cột "name") thay vì patients (có cột "full_name")
-    // vì appointments.patient_id → users.id (không phải patients.id)
+    // appointments.patient_id → patients.id (bệnh nhân nằm ở bảng "patients",
+    // không phải "users" — bảng đó chỉ chứa bác sĩ/admin/dược).
     const { data } = await supabase
       .from('appointments')
       .select(`
         *,
         patient:patient_id (
-          name,
-          phone
+          full_name,
+          phone,
+          date_of_birth
         )
       `)
       .eq('doctor_id', doctor.id)
@@ -107,11 +108,10 @@ export default function DoctorAppointmentsPage() {
     if (data) {
       const mapped = data.map((a: Appointment & { patient?: Record<string, string> }) => ({
         ...a,
-        // ✅ FIX: map từ "name" (users) thay vì "full_name" (patients)
-        patient_name:  a.patient?.name,
-        patient_phone: a.patient?.phone,
-        // users không có các cột dưới — giữ undefined, UI sẽ hiện "—"
-        patient_date_of_birth: undefined,
+        patient_name:          a.patient?.full_name,
+        patient_phone:         a.patient?.phone,
+        patient_date_of_birth: a.patient?.date_of_birth,
+        // Các cột này chưa có trong bảng "patients" hiện tại — giữ undefined, UI sẽ hiện "—"
         patient_blood_type:    undefined,
         patient_allergies:     undefined,
       }));
