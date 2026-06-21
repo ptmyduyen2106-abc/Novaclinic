@@ -64,7 +64,7 @@ export default function DoctorAppointmentsPage() {
   const [savedId, setSavedId]           = useState<string | null>(null);
   const [formError, setFormError]       = useState('');
 
-  // form state cho modal — giống hệt DoctorForm
+  // form state cho modal
   const [diagnosis, setDiagnosis]       = useState('');
   const [advice, setAdvice]             = useState('');
   const [serviceNote, setServiceNote]   = useState('');
@@ -89,17 +89,15 @@ export default function DoctorAppointmentsPage() {
 
     if (!doctor) { setLoading(false); return; }
 
-    // Lấy appointments + join thông tin bệnh nhân
+    // ✅ FIX: join từ users (có cột "name") thay vì patients (có cột "full_name")
+    // vì appointments.patient_id → users.id (không phải patients.id)
     const { data } = await supabase
       .from('appointments')
       .select(`
         *,
         patient:patient_id (
-          full_name,
-          phone,
-          date_of_birth,
-          blood_type,
-          allergies
+          name,
+          phone
         )
       `)
       .eq('doctor_id', doctor.id)
@@ -109,11 +107,13 @@ export default function DoctorAppointmentsPage() {
     if (data) {
       const mapped = data.map((a: Appointment & { patient?: Record<string, string> }) => ({
         ...a,
-        patient_name:          a.patient?.full_name,
-        patient_phone:         a.patient?.phone,
-        patient_date_of_birth: a.patient?.date_of_birth,
-        patient_blood_type:    a.patient?.blood_type,
-        patient_allergies:     a.patient?.allergies,
+        // ✅ FIX: map từ "name" (users) thay vì "full_name" (patients)
+        patient_name:  a.patient?.name,
+        patient_phone: a.patient?.phone,
+        // users không có các cột dưới — giữ undefined, UI sẽ hiện "—"
+        patient_date_of_birth: undefined,
+        patient_blood_type:    undefined,
+        patient_allergies:     undefined,
       }));
       setAppointments(mapped);
     }
@@ -154,7 +154,6 @@ export default function DoctorAppointmentsPage() {
   const serviceTotal = selectedServices.reduce((s, sv) => s + sv.price, 0);
   const totalPrice   = drugTotal + serviceTotal;
 
-  // ── Hoàn tất ca khám: tạo record cho Pharma + cập nhật trạng thái appointment ──
   async function handleComplete() {
     if (!selected) return;
     if (!diagnosis.trim()) { setFormError('Vui lòng nhập chẩn đoán'); return; }
@@ -162,7 +161,6 @@ export default function DoctorAppointmentsPage() {
     setSaving(true);
     setFormError('');
     try {
-      // 1. Tạo record trong bảng records (qua C++ backend) — để Pharma thấy được
       await apiCreateRecord({
         patientName: selected.patient_name ?? 'Bệnh nhân',
         yearOfBirth: selected.patient_date_of_birth
@@ -177,7 +175,6 @@ export default function DoctorAppointmentsPage() {
         status:      'pending',
       });
 
-      // 2. Cập nhật trạng thái appointment để đồng bộ 2 phía
       await supabase
         .from('appointments')
         .update({ status: 'completed', diagnosis: diagnosis.trim() })
@@ -203,7 +200,6 @@ export default function DoctorAppointmentsPage() {
     ? appointments
     : appointments.filter(a => a.status === filter);
 
-  // Group theo ngày
   const grouped = filtered.reduce<Record<string, Appointment[]>>((acc, a) => {
     acc[a.appointment_date] = acc[a.appointment_date] ?? [];
     acc[a.appointment_date].push(a);
@@ -282,7 +278,6 @@ export default function DoctorAppointmentsPage() {
               .sort(([a], [b]) => a.localeCompare(b))
               .map(([date, appts]) => (
                 <div key={date}>
-                  {/* Date header */}
                   <div className="flex items-center gap-3 mb-3">
                     <div className={`px-3 py-1 rounded-full text-xs font-bold ${
                       date === todayIso
@@ -393,7 +388,7 @@ export default function DoctorAppointmentsPage() {
           </div>
         )}
 
-        {/* ── Modal kê đơn / xem kết quả — đồng bộ với DoctorForm ── */}
+        {/* Modal */}
         {selected && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
             <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl my-8">
@@ -427,9 +422,9 @@ export default function DoctorAppointmentsPage() {
                 {/* Patient summary */}
                 <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-2 gap-2 text-sm">
                   {[
-                    { label: 'Họ tên',    value: selected.patient_name },
-                    { label: 'Tuổi',      value: calcAge(selected.patient_date_of_birth) ? `${calcAge(selected.patient_date_of_birth)} tuổi` : '—' },
-                    { label: 'SĐT',       value: selected.patient_phone ?? '—' },
+                    { label: 'Họ tên', value: selected.patient_name },
+                    { label: 'Tuổi',   value: calcAge(selected.patient_date_of_birth) ? `${calcAge(selected.patient_date_of_birth)} tuổi` : '—' },
+                    { label: 'SĐT',    value: selected.patient_phone ?? '—' },
                     { label: 'Nhóm máu', value: selected.patient_blood_type ?? '—' },
                   ].map(row => (
                     <div key={row.label}>
@@ -481,7 +476,7 @@ export default function DoctorAppointmentsPage() {
                   </div>
                 </div>
 
-                {/* Toa thuốc — dùng chung RxBuilder với form thường */}
+                {/* Toa thuốc */}
                 {selected.status !== 'completed' && (
                   <RxBuilder items={prescription} onChange={setPrescription} />
                 )}
