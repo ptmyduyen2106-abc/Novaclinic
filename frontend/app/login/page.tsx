@@ -18,20 +18,60 @@ function LoginForm() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(''); setLoading(true)
+
     try {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
       if (signInError) throw signInError
-      const { data: userData } = await supabase
-        .from('users').select('role').eq('id', data.user.id).single()
+
+      // ── Xác định role ──────────────────────────────────────────────
+      // Bảng "users" chứa role cho bác sĩ / admin / dược.
+      // Bệnh nhân lại nằm ở bảng "patients" riêng (không có cột role),
+      // nên nếu không tìm thấy ở "users" thì kiểm tra tiếp ở "patients".
+      let role: string | null = null
+
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', data.user.id)
+        .maybeSingle()
+
+      if (userRow?.role) {
+        role = userRow.role
+      } else {
+        const { data: patientRow } = await supabase
+          .from('patients')
+          .select('id')
+          .eq('id', data.user.id)
+          .maybeSingle()
+
+        if (patientRow) role = 'patient'
+      }
+
       const dest = redirect
         ? redirect
-        : userData?.role === 'pharma'   ? '/pharmacy'
-        : userData?.role === 'admin'    ? '/finance'
-        : userData?.role === 'patient'  ? '/patient'
-        : '/doctor'
+        : role === 'pharma'  ? '/pharmacy'
+        : role === 'admin'   ? '/finance'
+        : role === 'patient' ? '/patient'
+        : role === 'doctor'  ? '/doctor'
+        : null
+
+      if (!dest) {
+        setError('Tài khoản chưa được gán vai trò hợp lệ. Vui lòng liên hệ quản trị viên.')
+        setLoading(false)
+        return
+      }
+
       window.location.href = dest
-    } catch {
-      setError('Email hoặc mật khẩu không đúng. Vui lòng thử lại.')
+    } catch (err: any) {
+      // Log lỗi gốc ra console để debug, không hiện trực tiếp cho người dùng
+      console.error('Login error:', err)
+
+      const rawMessage: string = err?.message ?? ''
+      setError(
+        rawMessage.includes('Email not confirmed')
+          ? 'Email chưa được xác thực. Vui lòng kiểm tra hộp thư để xác nhận tài khoản trước khi đăng nhập.'
+          : 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'
+      )
       setLoading(false)
     }
   }
