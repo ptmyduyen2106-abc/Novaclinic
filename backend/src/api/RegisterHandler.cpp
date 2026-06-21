@@ -248,9 +248,12 @@ void register_handler(const httplib::Request& req,
     }
 
     // 4. Lấy user_id
+    // ✅ FIX: Supabase trả về { "user": { "id": "..." }, "session": null }
+    // khi email chưa confirmed — phải đọc auth.body["user"]["id"]
+    // chứ không phải auth.body["id"] (không tồn tại ở root)
     std::string user_id;
     try {
-        user_id = auth.body["id"].get<std::string>();
+        user_id = auth.body["user"]["id"].get<std::string>();
     } catch (...) {
         res.status = 500;
         res.body   = json{{"success", false},
