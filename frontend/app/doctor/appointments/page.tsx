@@ -95,7 +95,7 @@ export default function DoctorAppointmentsPage() {
       .select(`
         *,
         patient:patient_id (
-          name,
+          full_name,
           phone,
           date_of_birth,
           blood_type,
@@ -109,7 +109,7 @@ export default function DoctorAppointmentsPage() {
     if (data) {
       const mapped = data.map((a: Appointment & { patient?: Record<string, string> }) => ({
         ...a,
-        patient_name:          a.patient?.name,
+        patient_name:          a.patient?.full_name,
         patient_phone:         a.patient?.phone,
         patient_date_of_birth: a.patient?.date_of_birth,
         patient_blood_type:    a.patient?.blood_type,
