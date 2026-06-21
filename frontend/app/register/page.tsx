@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
 import { TermsModal } from '@/components/TermsModal';
 import { PrivacyModal } from '@/components/PrivacyModal';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 interface FormData {
   fullName: string;
@@ -105,35 +106,41 @@ export default function RegisterPage() {
     }
   };
 
+  // ─── Submit: gọi C++ backend /api/register ───
+  // Backend lo việc: tạo user trong Supabase Auth + insert profile vào bảng "patients"
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-            phone: formData.phone,
-          },
-        },
+      const res = await fetch(`${API_URL}/api/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name:     formData.fullName,
+          date_of_birth: formData.dateOfBirth,
+          gender:        formData.gender,
+          id_number:     formData.idNumber,
+          phone:         formData.phone,
+          email:         formData.email,
+          address:       formData.address,
+          username:      formData.username,
+          password:      formData.password,
+        }),
       });
 
-      if (error) throw error;
-      if (!data.user) throw new Error('Không tạo được tài khoản');
+      const text = await res.text();
+      let json: { success?: boolean; error?: string; message?: string };
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new Error(`Phản hồi không hợp lệ từ server (${res.status})`);
+      }
 
-      const { error: dbError } = await supabase.from('users').insert([
-        {
-          id: data.user.id,
-          name: formData.fullName,
-          role: 'patient',
-        },
-      ]);
-
-      if (dbError) throw dbError;
+      if (!res.ok || json.success === false) {
+        throw new Error(json.error ?? json.message ?? `Lỗi HTTP ${res.status}`);
+      }
 
       setSubmitSuccess(true);
     } catch (err) {
@@ -184,7 +191,6 @@ export default function RegisterPage() {
             Tài khoản của bạn đã được tạo. Vui lòng kiểm tra email để xác thực tài khoản
             trước khi đăng nhập.
           </p>
-          {/* ✅ FIX: thêm <Link> thay cho <a bị thiếu ở bản gốc */}
           <Link
             href="/login"
             className="inline-block w-full py-3 rounded-xl font-semibold text-white text-center transition-opacity hover:opacity-90"
