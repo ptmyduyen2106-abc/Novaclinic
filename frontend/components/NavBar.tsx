@@ -7,15 +7,15 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
 const NAV_LINKS = [
-  { href: '/doctor',              label: 'Kê đơn',    roles: ['doctor', 'admin'], icon: '🩺' },
-  { href: '/doctor/appointments', label: 'Lịch hẹn',  roles: ['doctor'],          icon: '📅' },
-  { href: '/pharmacy',            label: 'Nhà thuốc', roles: ['pharma', 'admin'], icon: '💊' },
-  { href: '/finance',             label: 'Tài chính', roles: ['admin'],           icon: '📊' },
-  { href: '/patient',             label: 'Trang chủ', roles: ['patient'],         icon: '🏠' },
-  { href: '/booking',             label: 'Đặt lịch',  roles: ['patient'],         icon: '📅' },
-  { href: '/queue',               label: 'Hàng chờ',  roles: ['patient'],         icon: '🔢' },
-  { href: '/records',             label: 'Hồ sơ',     roles: ['patient'],         icon: '📋' },
-  { href: '/patient-list',        label: 'Bệnh nhân', roles: ['admin'], icon: '🧑‍🤝‍🧑' },
+  { href: '/doctor',              label: 'Kê đơn',    roles: ['doctor', 'admin'] },
+  { href: '/doctor/appointments', label: 'Lịch hẹn',  roles: ['doctor']},
+  { href: '/pharmacy',            label: 'Nhà thuốc', roles: ['pharma', 'admin'] },
+  { href: '/finance',             label: 'Tài chính', roles: ['admin']},
+  { href: '/patient',             label: 'Trang chủ', roles: ['patient']},
+  { href: '/booking',             label: 'Đặt lịch',  roles: ['patient'] },
+  { href: '/queue',               label: 'Hàng chờ',  roles: ['patient'] },
+  { href: '/records',             label: 'Hồ sơ',     roles: ['patient'] },
+  { href: '/patient-list',        label: 'Bệnh nhân', roles: ['admin']},
 ]
 export function NavBar() {
   const { user, signOut } = useAuth()
