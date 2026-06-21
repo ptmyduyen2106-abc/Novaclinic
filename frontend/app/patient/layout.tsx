@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { NotificationBell } from '@/components/NotificationBell';
 
@@ -119,10 +120,15 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-          <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shrink-0">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#1B6CA8">
-              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm1 13h-2v-6h2v6zm0-8h-2V5h2v2z" />
-            </svg>
+          <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shrink-0 overflow-hidden p-1">
+            <Image
+              src="/logo.png"
+              alt="NovaClinic"
+              width={195}
+              height={154}
+              className="w-full h-full object-contain"
+              priority
+            />
           </div>
           <span className="text-white font-bold text-lg tracking-wide">NovaClinic</span>
           <button
@@ -208,13 +214,16 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
           {/* Notification */}
           {user && <NotificationBell userId={user.id} />}
+
           {/* Avatar */}
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+          <Link
+            href="/patient/profile"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 hover:opacity-90 transition-opacity"
             style={{ backgroundColor: '#1B6CA8' }}
+            title="Hồ sơ cá nhân"
           >
             {user?.name?.charAt(0)?.toUpperCase() ?? 'B'}
-          </div>
+          </Link>
         </header>
 
         {/* Page content injected here */}

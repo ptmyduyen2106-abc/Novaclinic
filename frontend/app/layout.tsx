@@ -2,15 +2,12 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
+import Image from 'next/image';
+
 
 export const metadata: Metadata = {
   title: 'Phòng Khám — Hệ thống quản lý',
   description: 'Phần mềm quản lý phòng khám: Bác sĩ · Nhà thuốc · Tài chính',
-  icons: {
-    icon: '/logo.png',
-    shortcut: '/logo.png',
-    apple: '/logo.png',
-  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
