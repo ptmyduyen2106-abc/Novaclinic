@@ -253,8 +253,6 @@ export async function apiFetch<T = unknown>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  // getSession() đọc từ cache local — không gọi network mỗi lần như refreshSession()
-  // refreshSession() có thể trả session=null nếu token hết hạn → body rỗng → crash
   const { data: { session } } = await supabase.auth.getSession()
   const token = session?.access_token
 
@@ -267,16 +265,13 @@ export async function apiFetch<T = unknown>(
     },
   })
 
-  // Đọc body thô trước — tránh crash khi body rỗng (204 No Content, network lỗi)
   const text = await res.text()
 
-  // Body rỗng — PATCH /complete và /cancel có thể trả 200 không có body
   if (!text || text.trim() === '') {
     if (res.ok) return undefined as T
     throw new Error(`HTTP ${res.status}: empty response`)
   }
 
-  // Parse JSON an toàn
   let json: { success?: boolean; data?: T; error?: string; message?: string }
   try {
     json = JSON.parse(text)
@@ -284,7 +279,6 @@ export async function apiFetch<T = unknown>(
     throw new Error(`Invalid JSON from server (${res.status}): ${text.slice(0, 120)}`)
   }
 
-  // Backend C++ trả { success: bool, data: T, error: string }
   if (!res.ok || json.success === false) {
     throw new Error(json.error ?? json.message ?? `HTTP ${res.status}`)
   }
@@ -357,12 +351,18 @@ export async function apiFetchExpenses(month?: string): Promise<Expense[]> {
   return apiFetch<Expense[]>(`/api/finance/expenses${qs}`)
 }
 
+// ✅ FIX: Nhận đủ createdBy, map sang created_by trước khi gửi backend
 export async function apiCreateExpense(
-  expense: Omit<Expense, 'id' | 'createdAt' | 'createdBy'>
+  expense: Omit<Expense, 'id' | 'createdAt'>
 ): Promise<Expense> {
   return apiFetch<Expense>('/api/finance/expenses', {
     method: 'POST',
-    body: JSON.stringify(expense),
+    body: JSON.stringify({
+      date:       expense.date,
+      amount:     expense.amount,
+      detail:     expense.detail,
+      created_by: expense.createdBy,  // camelCase → snake_case
+    }),
   })
 }
 
