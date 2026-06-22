@@ -5,8 +5,8 @@ import { supabase } from '@/lib/supabase';
 
 interface UserProfile {
   id: string;
-  name: string;
-  email: string;       // lấy từ auth, không có trong bảng users
+  name: string;        // map từ full_name trong bảng patients
+  email: string;       // lấy từ auth, không có trong bảng patients
   phone?: string;
   date_of_birth?: string;
   gender?: 'male' | 'female' | 'other';
@@ -74,7 +74,6 @@ export default function ProfilePage() {
     setLoading(true);
     setError(null);
 
-    // Lấy auth user để có email (bảng users không có cột email)
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       setLoading(false);
@@ -82,8 +81,9 @@ export default function ProfilePage() {
       return;
     }
 
+    // ✅ Query đúng bảng patients (bảng users không có thông tin cá nhân)
     const { data, error: fetchError } = await supabase
-      .from('users')
+      .from('patients')
       .select('*')
       .eq('id', user.id)
       .maybeSingle();
@@ -101,8 +101,12 @@ export default function ProfilePage() {
       return;
     }
 
-    // Gắn email từ auth vào profile (không lưu trong DB)
-    const merged: UserProfile = { ...data, email: user.email ?? '' };
+    // ✅ Map full_name → name để khớp với interface UserProfile
+    const merged: UserProfile = {
+      ...data,
+      name:  data.full_name ?? '',
+      email: user.email ?? '',
+    };
     setProfile(merged);
     setForm(merged);
     setLoading(false);
@@ -117,11 +121,15 @@ export default function ProfilePage() {
     setSaving(true);
     setError(null);
 
-    // Loại email và id ra — email không có cột trong DB, id là PK không update
-    const { id, email, ...updatable } = form;
+    // ✅ Map name → full_name khi lưu xuống bảng patients
+    const { id, email, name, ...rest } = form;
+    const updatable = {
+      ...rest,
+      full_name: name,
+    };
 
     const { error: updateError } = await supabase
-      .from('users')
+      .from('patients')   // ✅ đúng bảng
       .update(updatable)
       .eq('id', profile.id);
 
