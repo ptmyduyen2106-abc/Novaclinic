@@ -58,6 +58,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'info' | 'health' | 'security'>('info');
 
   // Password change
@@ -72,19 +73,38 @@ export default function ProfilePage() {
 
   async function fetchProfile() {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    setError(null);
 
-    const { data } = await supabase
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      setLoading(false);
+      setError('Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại.');
+      return;
+    }
+
+    // maybeSingle thay vì single -> không bắn 406 khi 0 dòng (RLS chặn / chưa có row)
+    const { data, error: fetchError } = await supabase
       .from('users')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (data) {
-      setProfile(data);
-      setForm(data);
+    if (fetchError) {
+      console.error('fetchProfile error:', fetchError);
+      setError('Không thể tải hồ sơ. Vui lòng thử lại.');
+      setLoading(false);
+      return;
     }
+
+    if (!data) {
+      // Row chưa tồn tại trong bảng users (vd: trigger tạo user lỗi) hoặc RLS chặn
+      setError('Không tìm thấy hồ sơ người dùng. Liên hệ quản trị viên nếu lỗi này lặp lại.');
+      setLoading(false);
+      return;
+    }
+
+    setProfile(data);
+    setForm(data);
     setLoading(false);
   }
 
@@ -95,8 +115,24 @@ export default function ProfilePage() {
   async function handleSave() {
     if (!profile) return;
     setSaving(true);
-    await supabase.from('users').update(form).eq('id', profile.id);
+    setError(null);
+
+    // Không gửi lại id/email trong payload update để tránh đụng cột bị khoá quyền
+    const { id, email, ...updatable } = form;
+
+    const { error: updateError } = await supabase
+      .from('users')
+      .update(updatable)
+      .eq('id', profile.id);
+
     setSaving(false);
+
+    if (updateError) {
+      console.error('handleSave error:', updateError);
+      setError('Lưu thất bại. Vui lòng thử lại.');
+      return;
+    }
+
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
     await fetchProfile();
@@ -133,6 +169,16 @@ export default function ProfilePage() {
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#1B6CA8" strokeWidth="4" />
           <path className="opacity-75" fill="#1B6CA8" d="M4 12a8 8 0 018-8v8H4z" />
         </svg>
+      </div>
+    );
+  }
+
+  if (error && !profile) {
+    return (
+      <div className="p-6 lg:p-8">
+        <div className="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3">
+          {error}
+        </div>
       </div>
     );
   }
@@ -189,6 +235,12 @@ export default function ProfilePage() {
           </button>
         ))}
       </div>
+
+      {error && (
+        <div className="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3 max-w-2xl">
+          {error}
+        </div>
+      )}
 
       {/* ── Tab: Thông tin cá nhân ── */}
       {tab === 'info' && (
