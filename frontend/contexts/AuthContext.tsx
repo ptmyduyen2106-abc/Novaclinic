@@ -1,7 +1,5 @@
 'use client'
-// ─────────────────────────────────────────────
 // contexts/AuthContext.tsx
-// ─────────────────────────────────────────────
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
 import { supabase, signInWithEmail, signOut as supabaseSignOut } from '@/lib/supabase'
@@ -17,24 +15,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const loadUser = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('users').select('*').eq('id', userId).single()
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle()          // ← không throw 406 khi 0 dòng
+
+    if (error) {
+      console.error('[AuthContext] loadUser error:', error.message)
+      setUser(null)
+      return
+    }
+
     setUser(data ?? null)
   }, [])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        loadUser(session.user.id).finally(() => setLoading(false))
-      } else {
+    // Dùng onAuthStateChange làm nguồn duy nhất — nó bắn INITIAL_SESSION
+    // ngay khi subscribe nên không cần getSession() riêng nữa
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          await loadUser(session.user.id)
+        } else {
+          setUser(null)
+        }
+        // setLoading(false) sau lần đầu tiên (INITIAL_SESSION)
         setLoading(false)
       }
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) loadUser(session.user.id)
-      else setUser(null)
-    })
+    )
 
     return () => subscription.unsubscribe()
   }, [loadUser])
