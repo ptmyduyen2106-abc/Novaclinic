@@ -1,11 +1,11 @@
-# 🏥 NovaClinic — Hệ thống Quản lý Phòng Khám
+# NovaClinic — Hệ thống Quản lý Phòng Khám
 
 > Monorepo gồm **Next.js 14 frontend** + **C++17 backend server** tích hợp **Supabase**  
 > Deploy: [novaclinic-six.vercel.app](https://novaclinic-six.vercel.app)
 
 ---
 
-## 📑 Mục lục
+##  Mục lục
 
 - [Tổng quan](#tổng-quan)
 - [Tech Stack](#tech-stack)
@@ -26,10 +26,10 @@
 
 | Vai trò | Chức năng chính |
 |---|---|
-| 🩺 **Doctor** | Khám bệnh, kê đơn thuốc, lập hồ sơ bệnh nhân |
-| 💊 **Pharmacist** | Xem hàng chờ realtime, cấp phát thuốc |
-| 💰 **Admin/Finance** | Dashboard tài chính, quản lý kho, chi phí |
-| 🧑‍⚕️ **Patient** | Đặt lịch hẹn, xem hồ sơ cá nhân |
+| **Doctor** | Khám bệnh, kê đơn thuốc, lập hồ sơ bệnh nhân |
+| **Pharmacist** | Xem hàng chờ realtime, cấp phát thuốc |
+| **Admin/Finance** | Dashboard tài chính, quản lý kho, chi phí |
+| **Patient** | Đặt lịch hẹn, xem hồ sơ cá nhân |
 
 ---
 
@@ -366,15 +366,26 @@ Hoặc kết nối GitHub repo trực tiếp trong Vercel Dashboard.
 
 ## Ngôn ngữ trong repo
 
-| Ngôn ngữ | Tỉ lệ |
-|---|---|
-| C++ | 81.4% |
-| Makefile | 13.3% |
-| TypeScript | 3.9% |
-| CMake | 0.6% |
-| PLpgSQL | 0.6% |
-| CSS | 0.1% |
-| JavaScript | 0.1% |
+### Phân chia Frontend vs Backend
+
+| Layer | Tỉ lệ | Ngôn ngữ |
+|---|---|---|
+| **Backend** | ~95.3% | C++ + Makefile + CMake |
+| **Frontend** | ~4.7% | TypeScript + PLpgSQL + CSS + JavaScript |
+
+> 💡 Frontend trông nhỏ vì **Tailwind CSS** viết thẳng vào `className` trong JSX — GitHub không đếm được phần styling đó. Nếu dùng CSS thuần thì tỉ lệ frontend sẽ cao hơn nhiều.
+
+### Chi tiết theo ngôn ngữ (GitHub thống kê)
+
+| Ngôn ngữ | Tỉ lệ | Layer | Ghi chú |
+|---|---|---|---|
+| C++ | 81.4% | Backend | Toàn bộ source `.cpp` + `.h` trong `src/` |
+| Makefile | 13.3% | Backend | `Makefile` nhiều rules/targets → nặng byte |
+| TypeScript | 3.9% | Frontend | Các file `.tsx`, `.ts` trong `app/`, `components/`, `hooks/`... |
+| CMake | 0.6% | Backend | `CMakeLists.txt` |
+| PLpgSQL | 0.6% | Frontend | `supabase/schema.sql` — stored procedures/functions |
+| CSS | 0.1% | Frontend | `globals.css` (phần lớn styling dùng Tailwind) |
+| JavaScript | 0.1% | Frontend | `next.config.js`, các file config |
 
 ---
 
