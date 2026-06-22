@@ -118,7 +118,16 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+  <div
+    className="
+      min-h-screen
+      flex
+      items-center
+      justify-center
+      p-4
+      bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.2),transparent_30%),radial-gradient(circle_at_top_right,rgba(34,197,94,0.2),transparent_30%),radial-gradient(circle_at_bottom_center,rgba(59,130,246,0.15),transparent_40%),linear-gradient(135deg,#f8fafc,#eff6ff)]
+    "
+  > 
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
           <Image
