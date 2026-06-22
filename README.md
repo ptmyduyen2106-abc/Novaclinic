@@ -373,7 +373,7 @@ Hoặc kết nối GitHub repo trực tiếp trong Vercel Dashboard.
 | **Backend** | ~95.3% | C++ + Makefile + CMake |
 | **Frontend** | ~4.7% | TypeScript + PLpgSQL + CSS + JavaScript |
 
-> 💡 Frontend trông nhỏ vì **Tailwind CSS** viết thẳng vào `className` trong JSX — GitHub không đếm được phần styling đó. Nếu dùng CSS thuần thì tỉ lệ frontend sẽ cao hơn nhiều.
+> Frontend trông nhỏ vì **Tailwind CSS** viết thẳng vào `className` trong JSX — GitHub không đếm được phần styling đó. Nếu dùng CSS thuần thì tỉ lệ frontend sẽ cao hơn nhiều.
 
 ### Chi tiết theo ngôn ngữ (GitHub thống kê)
 
