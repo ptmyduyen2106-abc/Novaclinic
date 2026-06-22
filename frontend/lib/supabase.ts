@@ -371,12 +371,20 @@ export async function apiFetchInventory(month?: string): Promise<InventoryItem[]
   return apiFetch<InventoryItem[]>(`/api/finance/inventory${qs}`)
 }
 
+// ✅ FIX: Map camelCase → snake_case trước khi gửi backend
 export async function apiCreateInventoryItem(
   item: Omit<InventoryItem, 'id' | 'createdAt'>
 ): Promise<InventoryItem> {
   return apiFetch<InventoryItem>('/api/finance/inventory', {
     method: 'POST',
-    body: JSON.stringify(item),
+    body: JSON.stringify({
+      date:           item.date,
+      invoice_number: item.invoiceNumber,  // camelCase → snake_case
+      item_type:      item.itemType,       // camelCase → snake_case
+      amount:         item.amount,
+      payment_method: item.paymentMethod,  // camelCase → snake_case
+      note:           item.note,
+    }),
   })
 }
 
