@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 interface UserProfile {
   id: string;
   name: string;
-  email: string;
+  email: string;       // lấy từ auth, không có trong bảng users
   phone?: string;
   date_of_birth?: string;
   gender?: 'male' | 'female' | 'other';
@@ -61,7 +61,6 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'info' | 'health' | 'security'>('info');
 
-  // Password change
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [pwError, setPwError] = useState('');
   const [pwSaving, setPwSaving] = useState(false);
@@ -75,6 +74,7 @@ export default function ProfilePage() {
     setLoading(true);
     setError(null);
 
+    // Lấy auth user để có email (bảng users không có cột email)
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       setLoading(false);
@@ -82,7 +82,6 @@ export default function ProfilePage() {
       return;
     }
 
-    // maybeSingle thay vì single -> không bắn 406 khi 0 dòng (RLS chặn / chưa có row)
     const { data, error: fetchError } = await supabase
       .from('users')
       .select('*')
@@ -97,14 +96,15 @@ export default function ProfilePage() {
     }
 
     if (!data) {
-      // Row chưa tồn tại trong bảng users (vd: trigger tạo user lỗi) hoặc RLS chặn
       setError('Không tìm thấy hồ sơ người dùng. Liên hệ quản trị viên nếu lỗi này lặp lại.');
       setLoading(false);
       return;
     }
 
-    setProfile(data);
-    setForm(data);
+    // Gắn email từ auth vào profile (không lưu trong DB)
+    const merged: UserProfile = { ...data, email: user.email ?? '' };
+    setProfile(merged);
+    setForm(merged);
     setLoading(false);
   }
 
@@ -117,7 +117,7 @@ export default function ProfilePage() {
     setSaving(true);
     setError(null);
 
-    // Không gửi lại id/email trong payload update để tránh đụng cột bị khoá quyền
+    // Loại email và id ra — email không có cột trong DB, id là PK không update
     const { id, email, ...updatable } = form;
 
     const { error: updateError } = await supabase
@@ -199,8 +199,10 @@ export default function ProfilePage() {
         <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/5" />
         <div className="absolute -bottom-8 right-16 w-28 h-28 rounded-full bg-white/5" />
         <div className="relative z-10 flex items-center gap-5">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold bg-white shrink-0"
-            style={{ color: '#1B6CA8' }}>
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold bg-white shrink-0"
+            style={{ color: '#1B6CA8' }}
+          >
             {initials}
           </div>
           <div>
@@ -335,7 +337,6 @@ export default function ProfilePage() {
       {/* ── Tab: Sức khoẻ ── */}
       {tab === 'health' && (
         <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5 max-w-2xl">
-          {/* Blood type */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
               Nhóm máu
@@ -358,7 +359,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Allergies */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
               Dị ứng
@@ -373,7 +373,6 @@ export default function ProfilePage() {
             <p className="text-xs text-gray-400 mt-1">Liệt kê các loại thuốc, thực phẩm hoặc chất gây dị ứng.</p>
           </div>
 
-          {/* Emergency contact */}
           <div className="pt-2 border-t border-gray-50">
             <p className="text-sm font-semibold text-gray-700 mb-3">Liên hệ khẩn cấp</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
